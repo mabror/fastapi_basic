@@ -1,4 +1,5 @@
 from email.policy import default
+from enum import unique
 from time import time
 from turtle import title
 from .database import Base
@@ -13,3 +14,12 @@ class Post(Base):
     content = Column(String, nullable=False)
     published = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+
+class Users(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    
