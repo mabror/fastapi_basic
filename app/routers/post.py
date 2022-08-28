@@ -6,6 +6,7 @@ from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from . . database import engine, get_db
 from sqlalchemy.orm import Session
 from app.oauth2 import get_current_user
+from sqlalchemy import func
 
 
 
@@ -22,9 +23,15 @@ def get_posts(db: Session = Depends(get_db), Limit: int = 10, search: Optional[s
     # cursor.execute("""SELECT * FROM posts""")
     # posts = cursor.fetchall()
 
+    # posts = db.execute(
+    #     'select posts. *, COUNT(votes.post_id) as votes from posts LEFT JOIN votes ON posts.id=votes.post_id group by posts.id' 
+    # )
+
     posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(Limit).all()
-    # print(posts)
-    return posts
+
+    results = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).all()
+    # print(results)
+    return results
 
 
 @router.get("/{id}")
@@ -32,6 +39,8 @@ def get_post(id: int, db: Session = Depends(get_db), Limit: int = 10):
     # cursor.execute("""SELECT * FROM posts WHERE id = %s """,(str(id)))
     # post = cursor.fetchone()
 
+
+   
     post = db.query(models.Post).filter(models.Post.id == id).first()
 
 
