@@ -1,3 +1,5 @@
+from operator import mod
+from typing import Optional
 from app import oauth2
 from . . import models, schema, utils
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
@@ -12,28 +14,28 @@ router = APIRouter(
     tags=['Posts']
 )
 
-@router.get("/")
-def root():
-    return {"message": "Hello World"}
 
 
 
 @router.get("/")
-def get_posts(db: Session = Depends(get_db)):
+def get_posts(db: Session = Depends(get_db), Limit: int = 10, search: Optional[str] = ""):
     # cursor.execute("""SELECT * FROM posts""")
     # posts = cursor.fetchall()
 
-    posts = db.query(models.Post).all()
+    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(Limit).all()
     # print(posts)
     return posts
 
 
 @router.get("/{id}")
-def get_post(id: int, db: Session = Depends(get_db)):
+def get_post(id: int, db: Session = Depends(get_db), Limit: int = 10):
     # cursor.execute("""SELECT * FROM posts WHERE id = %s """,(str(id)))
     # post = cursor.fetchone()
 
     post = db.query(models.Post).filter(models.Post.id == id).first()
+
+
+    
 
 
     if not post:
@@ -49,8 +51,8 @@ def create_post(post: schema.Post, db: Session = Depends(get_db), current_user: 
     # conn.commit()
 
     # new_post = models.Post(title=post.title, content=post.content, published=post.published)
-    print(current_user.email)
-    new_post = models.Post(**post.dict())
+    
+    new_post = models.Post(user_id=current_user.id, **post.dict())
 
     db.add(new_post)
     db.commit()
@@ -60,18 +62,24 @@ def create_post(post: schema.Post, db: Session = Depends(get_db), current_user: 
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db)):
+def delete_post(id: int, db: Session = Depends(get_db),  current_user: int = Depends(oauth2.get_current_user)):
     # cursor.execute("""DELETE FROM posts WHERE id = %s returning * """, (str(id)))
                    
     # delete_post = cursor.fetchone()
     # conn.commit()
 
-    post = db.query(models.Post).filter(models.Post.id == id)
+    post_query = db.query(models.Post).filter(models.Post.id == id)
 
-    if delete_post == None:
+    post = post_query.first()
+
+    if post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} was not found")
     
-    post.delete(synchronize_session=False)
+
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User didnt allow delete")
+    
+    post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

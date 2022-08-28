@@ -1,10 +1,12 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
+
 class Post(BaseModel):
     title: str
     content: str
-    published: bool
+    published: bool = True
+    
     
 
 class UserCreate(BaseModel):
