@@ -27,11 +27,10 @@ def get_posts(db: Session = Depends(get_db), Limit: int = 10, search: Optional[s
     #     'select posts. *, COUNT(votes.post_id) as votes from posts LEFT JOIN votes ON posts.id=votes.post_id group by posts.id' 
     # )
 
-    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(Limit).all()
 
-    results = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).all()
+    posts = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.title.contains(search)).limit(Limit).all()
     # print(results)
-    return results
+    return posts
 
 
 @router.get("/{id}")
@@ -41,7 +40,9 @@ def get_post(id: int, db: Session = Depends(get_db), Limit: int = 10):
 
 
    
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    # post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    post = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.id == id).first()
 
 
     
@@ -61,7 +62,7 @@ def create_post(post: schema.Post, db: Session = Depends(get_db), current_user: 
 
     # new_post = models.Post(title=post.title, content=post.content, published=post.published)
     
-    new_post = models.Post(user_id=current_user.id, **post.dict())
+    new_post = models.Post(owner_id=current_user.id, **post.dict())
 
     db.add(new_post)
     db.commit()
