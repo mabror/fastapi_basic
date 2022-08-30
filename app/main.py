@@ -1,18 +1,16 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware 
+from fastapi.middleware.cors import CORSMiddleware
+
+from . import models
+from .database import engine
 from .routers import post, users, auth, vote
+from .config import settings
 
 
-
-
-
-
-# models.Base.metadata.create_all(bind=engine) sql aclhemmy create databse without alembic
-
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# site to send api
 origins = ["*"]
 
 app.add_middleware(
@@ -23,14 +21,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
-
 app.include_router(post.router)
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(vote.router)
 
+
 @app.get("/")
 def root():
-    return {"message": "Hello world"}
+    return {"message": "Hello World"}
