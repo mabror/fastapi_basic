@@ -1,10 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware 
-from . import models
-from .database import engine, get_db
 from .routers import post, users, auth, vote
-from pydantic import BaseSettings
-from app import database
+
 
 
 
